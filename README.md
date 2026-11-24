@@ -1,27 +1,29 @@
-[![Pump.fun Paper Sprint: Any Bot Can Win](https://make.fun/badge/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b.svg)](https://make.fun/competitions/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b)
-[![Rank](https://make.fun/badge/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/ChristaNavisa/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/rank.svg)](https://make.fun/competitions/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b)
-[![Reward](https://make.fun/badge/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/ChristaNavisa/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/reward.svg)](https://make.fun/competitions/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b)
+# Pump.fun Paper Sprint: Any Bot Can Win — Patient Tickets Bot
 
-# Pump.fun Paper Sprint bot
+[![make.fun](https://make.fun/badge/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b.svg)](https://make.fun/bounty/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b)
+[![rank](https://make.fun/badge/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/ChristaNavisa/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/rank.svg)](https://make.fun/bounty/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b)
+[![reward](https://make.fun/badge/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/ChristaNavisa/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b/reward.svg)](https://make.fun/bounty/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b)
 
-A paper-trading bot for the [Pump.fun Paper Sprint: Any Bot Can Win](https://make.fun/competitions/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b) bounty on make.fun. One program, `main.ts` (Node 22), speaking the `agent-fun/replay/v2` protocol over stdin/stdout: it reads the harness `hello` and `batch` messages and answers every batch with its `orders`.
+A paper-trading bot for the [Pump.fun Paper Sprint](https://make.fun/bounty/u-boothlord-pump-fun-paper-sprint-any-bot-can-f83c389b) on make.fun. It replays 6 hours of real pump.fun market data; highest net PnL takes the pot.
 
-## Strategy
+## Strategy: early-entry patient tickets
 
-- **Momentum entries**: buy young bonding curves showing real buy pressure — net SOL inflow, several distinct buyers, price rising and holding near its window high — once the real SOL reserve is big enough for a meaningful (≥0.01 SOL) buy.
-- **Pyramid into strength only**: add to a position while the price is at or above the last buy and inflow is still positive, up to 0.4 SOL per coin.
-- **Fast exits**: stop-loss at −15% of cost, trailing stop 25% below peak once 10% up, full take-profit at a double, a hold cap, and a fade exit when sellers take over.
-- **Pace guardrail**: tiny 0.01 SOL probe round trips keep the run on pace for the 20-coin / 0.01-SOL minimum bar even in a quiet window.
-- **Small stakes**: at most 5 open positions, at most ~2 SOL deployed against 10 SOL capital, so max drawdown stays far under the 50% guardrail.
+- **Enter young curves, once:** age ≤ 7,200 slots, real SOL reserves ≥ 1 SOL, at least 2 buys from at least 2 distinct buyers. One shot per mint — a rejected or failed buy is never retried.
+- **Size:** min(1% of real reserves, 0.2 SOL), always ≥ 0.01 SOL, so every completed round trip counts toward the 20-coin minimum bar.
+- **Exits (all in bigint cross-multiplied rationals, no floats):** take profit at +200% (3× entry), trailing stop 40% below the peak once the price has doubled, stop-loss at −70%, time exit after 20,000 slots.
+- **Probe guardrail:** while round trips are below 20 and behind pace (< 2 qualifying trips per 10,000 elapsed slots), entry relaxes to ≥ 1 buy / ≥ 1 buyer / age ≤ 14,400 slots and buys exactly 0.01 SOL, so the minimum bar is still met on a slow window.
+- **Fully deterministic:** no clock, no random, no network. Every decision comes from the harness state alone, so the two grading executions produce byte-identical action logs.
 
-Fully deterministic: no clock, no randomness, no network, no environment. Two runs produce byte-identical action logs.
+## Files
 
-## Grade locally
+- `main.ts` — the strategy (Node 22, runs via the vendored `agent-fun/replay/v2` shim).
+- `vendor/makefun-bot.ts` — the kit's zero-dependency replay shim.
+- `LICENSE` — MIT.
+
+## Run
+
+Grade locally with the kit (from the kit directory):
 
 ```sh
-node <kit>/cli/makefun.mjs grade-local --kit <kit> --bot . --driver process
+node cli/makefun.mjs grade-local --kit . --bot <repository> --driver process --worktree
 ```
-
-## License
-
-MIT — see [LICENSE](LICENSE).
